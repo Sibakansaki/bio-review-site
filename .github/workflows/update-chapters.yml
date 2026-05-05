@@ -3,8 +3,8 @@ name: Auto Update Chapters
 on:
   push:
     paths:
-      - 'data/ch*.js'   # 只有 data/ 裡的 ch__.js 有變動時才觸發
-  workflow_dispatch:     # 允許手動觸發
+      - 'data/ch*.js'
+  workflow_dispatch:
 
 jobs:
   update-index:
@@ -16,29 +16,27 @@ jobs:
 
       - name: Scan data/ and update index.html
         run: |
-          # 找出所有 data/ch*.js，依檔名排序
-          FILES=$(ls data/ch*.js 2>/dev/null | sort)
-
-          if [ -z "$FILES" ]; then
-            echo "No chapter files found, skipping."
-            exit 0
-          fi
-
-          # 組成 <script> 標籤字串
-          SCRIPT_TAGS=""
-          for f in $FILES; do
-            SCRIPT_TAGS="${SCRIPT_TAGS}  <script src=\"${f}\"></script>\n"
-          done
-
-          # 用 Python 替換 index.html 中的章節區塊
-          python3 - <<PYEOF
+          python3 << 'PYEOF'
           import re
+          import glob
+          import os
 
+          # 找出所有 data/ch*.js，依檔名排序
+          files = sorted(glob.glob('data/ch*.js'))
+
+          if not files:
+              print("No chapter files found, skipping.")
+              exit(0)
+
+          # 組成 <script> 標籤區塊
+          script_tags = '\n'.join(f'  <script src="{f}"></script>' for f in files)
+          new_block = f'<!-- CHAPTERS:START -->\n{script_tags}\n<!-- CHAPTERS:END -->'
+
+          # 讀取 index.html
           with open('index.html', 'r', encoding='utf-8') as f:
               content = f.read()
 
-          new_block = "<!-- CHAPTERS:START -->\n${SCRIPT_TAGS}<!-- CHAPTERS:END -->"
-
+          # 替換 CHAPTERS 區塊
           updated = re.sub(
               r'<!-- CHAPTERS:START -->.*?<!-- CHAPTERS:END -->',
               new_block,
@@ -46,10 +44,11 @@ jobs:
               flags=re.DOTALL
           )
 
+          # 寫回 index.html
           with open('index.html', 'w', encoding='utf-8') as f:
               f.write(updated)
 
-          print("index.html updated successfully.")
+          print(f"Done! Added {len(files)} chapter(s): {files}")
           PYEOF
 
       - name: Commit if changed
@@ -57,6 +56,5 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
-          # 有變動才 commit，避免空 commit
           git diff --cached --quiet || git commit -m "chore: auto-update chapter scripts"
           git push
