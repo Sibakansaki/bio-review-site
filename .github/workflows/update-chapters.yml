@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'data/ch*.js'   # 只有 data/ 裡的 ch__.js 有變動時才觸發
+  workflow_dispatch:     # 允許手動觸發
 
 jobs:
   update-index:
@@ -30,7 +31,7 @@ jobs:
           done
 
           # 用 Python 替換 index.html 中的章節區塊
-          python3 - <<EOF
+          python3 - <<PYEOF
           import re
 
           with open('index.html', 'r', encoding='utf-8') as f:
@@ -49,7 +50,7 @@ jobs:
               f.write(updated)
 
           print("index.html updated successfully.")
-          EOF
+          PYEOF
 
       - name: Commit if changed
         run: |
