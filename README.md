@@ -7,23 +7,17 @@
 ## 📁 檔案結構
 
 ```
-bio-review-site/
-├── index.html          # HTML 骨架（幾乎不需要動）
-├── style.css           # 所有樣式
-├── app.js              # 所有互動邏輯
-└── data/
-    ├── index.js        # ⭐ 章節清單（新增章節只改這裡）
-    ├── ch48.js         # CH48 神經系統
-    └── ch__.js         # 未來新增的章節...
+repo/
+├── .github/
+│   └── workflows/
+│       └── update-chapters.yml   # GitHub Actions 自動化腳本
+├── data/
+│   ├── index.js                  # 章節收集器（不需要動）
+│   └── ch48.js                   # CH48 神經系統
+├── index.html                    # HTML 骨架
+├── style.css                     # 所有樣式
+└── app.js                        # 所有互動邏輯
 ```
-
----
-
-## 🚀 使用方式
-
-直接用瀏覽器開啟 `index.html` 即可，無需安裝任何套件或架設伺服器。
-
-> ⚠️ 部分瀏覽器會阻擋本機載入 `.js` 檔案（CORS 限制）。若章節無法載入，建議用 VS Code 的 Live Server 或任意靜態伺服器開啟。
 
 ---
 
@@ -49,9 +43,9 @@ bio-review-site/
 
 ---
 
-## ➕ 新增章節（每次只需 2 步驟）
+## ➕ 新增章節（只要丟檔案就好）
 
-### Step 1 — 建立新的章節資料檔
+### Step 1 — 建立章節資料檔
 
 在 `data/` 資料夾新增 `ch__.js`，格式如下：
 
@@ -71,37 +65,51 @@ const CH01 = {
       logic: "記憶邏輯 → 用箭頭串連因果",
       pitfall: "針對這題錯誤選項的陷阱說明。",
       sourceQuestion: {
-        school: "104 慈濟",        // 年份 + 學校
+        school: "104 慈濟",
         question: "完整題幹...",
-        options: {
-          A: "選項A",
-          B: "選項B",
-          C: "選項C",
-          D: "選項D"
-        },
-        wrong: "B",    // 原本答錯的選項
-        correct: "A"   // 正確答案
+        options: { A: "選項A", B: "選項B", C: "選項C", D: "選項D" },
+        wrong: "B",
+        correct: "A"
       }
-    },
-    // 更多卡片...
+    }
   ]
 };
 ```
 
 > 變數名稱規則：`CH` + 章節數字，例如 `CH01`、`CH12`、`CH48`。
 
-### Step 2 — 在 `data/index.js` 登錄新章節
+### Step 2 — Push 到 GitHub
 
-打開 `data/index.js`，在 `CHAPTER_FILES` 陣列加一行路徑：
-
-```js
-const CHAPTER_FILES = [
-  "./data/ch48.js",
-  "./data/ch01.js",  // ← 新增這行
-];
+```bash
+git add .
+git commit -m "add ch01"
+git push
 ```
 
-存檔，重新整理瀏覽器，完成 ✅
+**GitHub Actions 會自動：**
+1. 偵測到 `data/` 有新的 `ch*.js`
+2. 更新 `index.html` 的 `<script>` 區塊
+3. Commit + push 回 repo
+4. 網站自動更新 ✅
+
+> **覆蓋既有章節**（如重新上傳 `ch48.js`）不需要任何額外步驟，直接 push 即可，Actions 不會觸發但網站內容會自動更新。
+
+---
+
+## ⚙️ GitHub 初次設定（只需做一次）
+
+**1. 開啟 Actions 寫入權限**
+
+`Settings → Actions → General → Workflow permissions`
+→ 選 **Read and write permissions** → Save
+
+**2. 開啟 GitHub Pages**
+
+`Settings → Pages → Source`
+→ 選 **Deploy from a branch**
+→ Branch 選 **main**，資料夾選 **/ (root)** → Save
+
+網站會在 `https://你的帳號.github.io/repo名稱/` 上線。
 
 ---
 
@@ -122,22 +130,13 @@ const CHAPTER_FILES = [
 
 ---
 
-## 🛠️ 技術說明
-
-- 純前端，無框架，無需 Node.js 或任何建置工具
-- 章節資料以獨立 `.js` 檔案管理，動態注入 `<script>` 載入
-- 使用 Google Fonts：`Nunito`（標題）+ `Noto Sans TC`（內文）
-- 所有樣式以 CSS Variables 管理，修改配色只需調整 `style.css` 的 `:root`
-
----
-
 ## 📝 配合 AI 萃取卡片
 
 本網站設計搭配 AI 工具從錯題本自動產出卡片資料：
 
 1. 上傳錯題本 PDF（手寫或掃描皆可）
 2. AI 辨識錯題、萃取觀念，輸出符合上述格式的 `ch__.js`
-3. 放進 `data/` 資料夾，登錄 `index.js`，完成
+3. 把檔案丟進 `data/` → push → 完成
 
 ---
 
@@ -156,3 +155,12 @@ const CHAPTER_FILES = [
   --accent5: #C77DFF;   /* 紫色強調 */
 }
 ```
+
+---
+
+## 🛠️ 技術說明
+
+- 純前端，無框架，無需 Node.js 或任何建置工具
+- 章節資料以獨立 `.js` 檔案管理，由 GitHub Actions 自動維護 `<script>` 標籤
+- 使用 Google Fonts：`Nunito`（標題）+ `Noto Sans TC`（內文）
+- 所有樣式以 CSS Variables 管理
