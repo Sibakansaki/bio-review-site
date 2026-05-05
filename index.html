@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生物觀念複習站 🧬</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-icon">🧬</div>
+  <div>載入中…</div>
+</div>
+
+<!-- Floating BG Dots -->
+<div id="floatingDots"></div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo" onclick="showPage('home')">
+    <span class="logo-icon">🧬</span>
+    <div>
+      <div>生物複習站</div>
+      <div class="logo-sub">Bio Review</div>
+    </div>
+  </div>
+  <nav>
+    <button class="nav-btn active" id="nav-home"   onclick="showPage('home')">首頁</button>
+    <button class="nav-btn"        id="nav-browse" onclick="showPage('browse')">瀏覽卡片</button>
+    <button class="nav-btn"        id="nav-quiz"   onclick="showPage('quiz')">測驗</button>
+  </nav>
+</header>
+
+<!-- ════════════════════════════════════
+     HOME PAGE
+     ════════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <h1>搞定那些<em>搞不懂</em><br>的生物觀念 🎯</h1>
+    <p>從你的錯題出發，精準複習每一個觀念，考前衝刺超有效率！</p>
+    <div class="stats-row" id="statsRow"></div>
+  </div>
+
+  <div class="section-title">📚 選擇章節</div>
+  <div class="chapter-grid" id="chapterGrid"></div>
+
+  <div class="section-title">⚡ 快速開始</div>
+  <div class="quick-actions">
+    <div class="action-btn" onclick="startQuiz('all')">
+      <div class="action-icon">🎲</div>
+      <div class="action-text">
+        <h3>全部隨機測驗</h3>
+        <p>從所有章節中隨機出題，全面練習</p>
+      </div>
+    </div>
+    <div class="action-btn" onclick="showPage('browse')">
+      <div class="action-icon">📖</div>
+      <div class="action-text">
+        <h3>瀏覽所有卡片</h3>
+        <p>查看觀念摘要、邏輯脈絡和陷阱提示</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     BROWSE PAGE
+     ════════════════════════════════════ -->
+<div class="page" id="page-browse">
+  <div class="browse-controls">
+    <input type="text" class="search-box" id="searchInput"
+           placeholder="🔍 搜尋觀念、標籤…" oninput="filterCards()">
+    <div class="filter-chips" id="filterChips"></div>
+  </div>
+  <div class="cards-grid" id="cardsGrid"></div>
+</div>
+
+<!-- ════════════════════════════════════
+     QUIZ PAGE
+     ════════════════════════════════════ -->
+<div class="page" id="page-quiz">
+
+  <!-- Setup -->
+  <div class="quiz-setup" id="quizSetup">
+    <h2>🎯 開始測驗</h2>
+    <p>選擇範圍和題數，挑戰自己！</p>
+    <div class="quiz-option-grid" id="quizChapterOptions"></div>
+    <div class="count-options">
+      <div class="count-card selected" onclick="selectCount(5, this)">
+        <h4>5 題</h4><p>快速練習</p>
+      </div>
+      <div class="count-card" onclick="selectCount(10, this)">
+        <h4>10 題</h4><p>標準測驗</p>
+      </div>
+      <div class="count-card" onclick="selectCount(999, this)">
+        <h4>全部</h4><p>完整挑戰</p>
+      </div>
+    </div>
+    <button class="start-btn" onclick="beginQuiz()">開始測驗 →</button>
+  </div>
+
+  <!-- Active Quiz -->
+  <div class="quiz-active" id="quizActive" style="display:none;">
+    <div class="quiz-progress-wrap">
+      <div class="quiz-progress-fill" id="quizProgressFill"></div>
+    </div>
+    <div class="quiz-meta">
+      <span class="quiz-q-num" id="quizQNum"></span>
+      <span class="quiz-score-label" id="quizScoreLabel">✅ 0  ❌ 0</span>
+    </div>
+    <div class="quiz-question-card">
+      <span class="quiz-school" id="quizSchool"></span>
+      <div class="quiz-question-text" id="quizQuestionText"></div>
+      <div class="quiz-options" id="quizOptions"></div>
+    </div>
+    <div class="quiz-feedback" id="quizFeedback">
+      <div class="feedback-result"  id="feedbackResult"></div>
+      <div class="feedback-concept" id="feedbackConcept"></div>
+      <div class="feedback-logic"   id="feedbackLogic"></div>
+      <div class="feedback-pitfall" id="feedbackPitfall"></div>
+    </div>
+    <div class="quiz-nav">
+      <button class="quiz-nav-btn"         onclick="exitQuiz()">離開</button>
+      <button class="quiz-nav-btn primary" onclick="nextQuestion()" id="quizNextBtn" style="display:none;">下一題 →</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="quiz-result" id="quizResult" style="display:none;">
+    <div id="resultEmoji" class="result-emoji"></div>
+    <div id="resultCircle" class="result-circle">
+      <div class="result-score" id="resultScore"></div>
+      <div class="result-total" id="resultTotal"></div>
+    </div>
+    <div class="result-title"    id="resultTitle"></div>
+    <div class="result-subtitle" id="resultSubtitle"></div>
+    <div class="result-actions">
+      <button class="result-btn primary" onclick="retryQuiz()">再來一次 🔄</button>
+      <button class="result-btn"         onclick="showPage('quiz')">換題目</button>
+      <button class="result-btn"         onclick="showPage('browse')">複習卡片</button>
+    </div>
+    <div id="missedSection"></div>
+  </div>
+
+</div>
+
+<!-- ── SCRIPTS ──
+     順序：data/index.js → data/ch__.js（動態載入）→ app.js
+-->
+<script src="data/index.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

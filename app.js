@@ -1,0 +1,350 @@
+// ═══════════════════════════════════════
+// app.js — 生物複習站 主程式邏輯
+// ═══════════════════════════════════════
+
+// ── STATE ──────────────────────────────
+let ALL_CHAPTERS = [];
+let currentFilter = 'all';
+
+// Quiz state
+let quizCards = [];
+let quizIndex = 0;
+let quizCorrect = 0;
+let quizWrong = 0;
+let quizAnswered = false;
+let quizSelectedChapter = 'all';
+let quizSelectedCount = 5;
+let missedCards = [];
+let lastQuizConfig = {};
+
+// ── INIT ────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  spawnFloatingDots();
+  await loadAllChapters();
+  ALL_CHAPTERS = collectChapters();
+  hideLoading();
+  renderHome();
+});
+
+function hideLoading() {
+  const el = document.getElementById('loadingScreen');
+  if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }
+}
+
+// ── FLOATING DOTS ───────────────────────
+function spawnFloatingDots() {
+  const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#C77DFF'];
+  const container = document.getElementById('floatingDots');
+  for (let i = 0; i < 15; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    const size = Math.random() * 40 + 10;
+    d.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random() * 100}%;
+      background:${colors[i % colors.length]};
+      animation-duration:${Math.random() * 20 + 15}s;
+      animation-delay:-${Math.random() * 20}s;
+    `;
+    container.appendChild(d);
+  }
+}
+
+// ── PAGE NAVIGATION ─────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  if (name === 'home')   renderHome();
+  if (name === 'browse') renderBrowse();
+  if (name === 'quiz')   renderQuizSetup();
+}
+
+// ══════════════════════════════════════
+// HOME
+// ══════════════════════════════════════
+function renderHome() {
+  const allCards = ALL_CHAPTERS.flatMap(c => c.cards);
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-pill blue">📚 ${allCards.length} 張卡片</div>
+    <div class="stat-pill red">🧠 ${ALL_CHAPTERS.length} 個章節</div>
+    <div class="stat-pill yellow">⭐ 全部待複習</div>
+  `;
+
+  document.getElementById('chapterGrid').innerHTML = ALL_CHAPTERS.length
+    ? ALL_CHAPTERS.map(ch => `
+        <div class="chapter-card" style="border-top-color:${ch.color};"
+             onclick="filterByChapter('${ch.id}')">
+          <div class="chapter-emoji">${ch.emoji}</div>
+          <div class="chapter-name">${ch.title}</div>
+          <div class="chapter-count">${ch.cards.length} 張卡片</div>
+          <div class="chapter-badge" style="background:${ch.color}">${ch.id.toUpperCase()}</div>
+          <div class="chapter-progress">
+            <div class="chapter-progress-bar" style="width:100%;background:${ch.color}"></div>
+          </div>
+        </div>`)
+      .join('')
+    : `<div class="empty-state" style="grid-column:1/-1">
+         <div class="big">📂</div>
+         <p>尚未載入任何章節資料</p>
+       </div>`;
+}
+
+function filterByChapter(chId) {
+  currentFilter = chId;
+  showPage('browse');
+}
+
+// ══════════════════════════════════════
+// BROWSE
+// ══════════════════════════════════════
+function renderBrowse() {
+  // Chips
+  const chips = document.getElementById('filterChips');
+  chips.innerHTML =
+    `<button class="chip ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">全部</button>` +
+    ALL_CHAPTERS.map(ch =>
+      `<button class="chip ${currentFilter === ch.id ? 'active' : ''}"
+               style="${currentFilter === ch.id ? `background:${ch.color};border-color:${ch.color};` : ''}"
+               onclick="setFilter('${ch.id}')">
+         ${ch.emoji} ${ch.title}
+       </button>`
+    ).join('');
+  filterCards();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  renderBrowse();
+}
+
+function filterCards() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  let cards = currentFilter === 'all'
+    ? ALL_CHAPTERS.flatMap(c => c.cards)
+    : (ALL_CHAPTERS.find(c => c.id === currentFilter)?.cards || []);
+
+  if (q) cards = cards.filter(c =>
+    c.concept.toLowerCase().includes(q) ||
+    c.tags.some(t => t.toLowerCase().includes(q)) ||
+    c.summary.toLowerCase().includes(q)
+  );
+
+  // Build a chapter lookup map
+  const chMap = {};
+  ALL_CHAPTERS.forEach(ch => ch.cards.forEach(c => { chMap[c.id] = ch; }));
+
+  const grid = document.getElementById('cardsGrid');
+  if (!cards.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="big">🔍</div><p>找不到符合的卡片</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = cards.map(card => {
+    const ch = chMap[card.id] || {};
+    const optHtml = Object.entries(card.sourceQuestion.options).map(([k, v]) => {
+      const cls = card.sourceQuestion.correct.includes(k) ? 'correct'
+                : k === card.sourceQuestion.wrong ? 'wrong' : '';
+      return `<div class="opt ${cls}">${k}. ${v}</div>`;
+    }).join('');
+
+    return `
+    <div class="review-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-concept">${card.concept}</div>
+        <div class="card-school" style="background:${ch.color || '#888'}">${card.sourceQuestion.school}</div>
+      </div>
+      <div class="card-tags">${card.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div class="card-summary">${card.summary}</div>
+      <div class="card-logic">💡 ${card.logic}</div>
+      <div class="card-detail">
+        <div class="pitfall-box">
+          <h4>⚠️ 常見陷阱</h4>
+          <p>${card.pitfall}</p>
+        </div>
+        <div class="source-box">
+          <h4>📋 原始題目</h4>
+          <div class="source-question">${card.sourceQuestion.question}</div>
+          <div class="source-options">${optHtml}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(el) { el.classList.toggle('expanded'); }
+
+// ══════════════════════════════════════
+// QUIZ — SETUP
+// ══════════════════════════════════════
+function renderQuizSetup() {
+  document.getElementById('quizSetup').style.display  = 'block';
+  document.getElementById('quizActive').style.display = 'none';
+  document.getElementById('quizResult').style.display = 'none';
+
+  document.getElementById('quizChapterOptions').innerHTML =
+    `<div class="quiz-option-card ${quizSelectedChapter === 'all' ? 'selected' : ''}"
+          onclick="selectChapter('all', this)">
+       <h4>🎲 全部章節</h4><p>所有卡片混合出題</p>
+     </div>` +
+    ALL_CHAPTERS.map(ch =>
+      `<div class="quiz-option-card ${quizSelectedChapter === ch.id ? 'selected' : ''}"
+            onclick="selectChapter('${ch.id}', this)">
+         <h4>${ch.emoji} ${ch.title}</h4><p>${ch.cards.length} 張卡片</p>
+       </div>`
+    ).join('');
+}
+
+function selectChapter(id, el) {
+  quizSelectedChapter = id;
+  document.querySelectorAll('#quizChapterOptions .quiz-option-card').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectCount(n, el) {
+  quizSelectedCount = n;
+  document.querySelectorAll('.count-card').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function startQuiz(chId) {
+  quizSelectedChapter = chId || 'all';
+  showPage('quiz');
+  setTimeout(beginQuiz, 80);
+}
+
+function beginQuiz() {
+  let pool = quizSelectedChapter === 'all'
+    ? ALL_CHAPTERS.flatMap(c => c.cards)
+    : (ALL_CHAPTERS.find(c => c.id === quizSelectedChapter)?.cards || []);
+
+  if (!pool.length) { alert('此章節尚無卡片！'); return; }
+
+  pool = shuffle([...pool]);
+  quizCards  = pool.slice(0, Math.min(quizSelectedCount, pool.length));
+  quizIndex  = 0; quizCorrect = 0; quizWrong = 0; missedCards = [];
+  lastQuizConfig = { ch: quizSelectedChapter, count: quizSelectedCount };
+
+  document.getElementById('quizSetup').style.display  = 'none';
+  document.getElementById('quizActive').style.display = 'block';
+  document.getElementById('quizResult').style.display = 'none';
+  renderQuestion();
+}
+
+// ── QUIZ — ACTIVE ───────────────────────
+function renderQuestion() {
+  const card  = quizCards[quizIndex];
+  const total = quizCards.length;
+  quizAnswered = false;
+
+  document.getElementById('quizProgressFill').style.width = `${(quizIndex / total) * 100}%`;
+  document.getElementById('quizQNum').textContent = `第 ${quizIndex + 1} / ${total} 題`;
+  document.getElementById('quizScoreLabel').textContent = `✅ ${quizCorrect}  ❌ ${quizWrong}`;
+
+  const ch = ALL_CHAPTERS.find(c => c.cards.some(cc => cc.id === card.id)) || {};
+  const schoolEl = document.getElementById('quizSchool');
+  schoolEl.textContent = card.sourceQuestion.school;
+  schoolEl.style.background = ch.color || '#888';
+
+  document.getElementById('quizQuestionText').textContent = card.sourceQuestion.question;
+  document.getElementById('quizOptions').innerHTML = Object.entries(card.sourceQuestion.options)
+    .map(([k, v]) => `<button class="quiz-opt-btn" onclick="selectAnswer('${k}', this)">${k}. ${v}</button>`)
+    .join('');
+
+  const fb = document.getElementById('quizFeedback');
+  fb.className = 'quiz-feedback';
+  document.getElementById('quizNextBtn').style.display = 'none';
+}
+
+function selectAnswer(key, btn) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  const card    = quizCards[quizIndex];
+  const correct = card.sourceQuestion.correct;
+  const isRight = correct.includes(key);
+
+  document.querySelectorAll('.quiz-opt-btn').forEach(b => {
+    b.disabled = true;
+    const k = b.textContent.trim()[0];
+    if (correct.includes(k)) b.classList.add('correct');
+    else if (k === key && !isRight) b.classList.add('wrong');
+  });
+
+  if (isRight) { quizCorrect++; } else { quizWrong++; missedCards.push(card); }
+
+  const fb = document.getElementById('quizFeedback');
+  fb.className = `quiz-feedback show${isRight ? '' : ' wrong-fb'}`;
+
+  const resEl = document.getElementById('feedbackResult');
+  resEl.className = `feedback-result ${isRight ? 'correct' : 'wrong'}`;
+  resEl.textContent = isRight ? '✅ 答對了！' : '❌ 答錯了';
+
+  document.getElementById('feedbackConcept').textContent = '📌 ' + card.concept;
+  document.getElementById('feedbackLogic').textContent   = '💡 ' + card.logic;
+  document.getElementById('feedbackPitfall').textContent = '⚠️ 陷阱：' + card.pitfall;
+  document.getElementById('quizScoreLabel').textContent  = `✅ ${quizCorrect}  ❌ ${quizWrong}`;
+
+  const nextBtn = document.getElementById('quizNextBtn');
+  nextBtn.style.display = 'inline-block';
+  nextBtn.textContent = quizIndex + 1 >= quizCards.length ? '看結果 →' : '下一題 →';
+}
+
+function nextQuestion() {
+  quizIndex++;
+  if (quizIndex >= quizCards.length) { showResult(); return; }
+  renderQuestion();
+}
+
+function exitQuiz() { renderQuizSetup(); }
+
+// ── QUIZ — RESULT ───────────────────────
+function showResult() {
+  document.getElementById('quizActive').style.display = 'none';
+  document.getElementById('quizResult').style.display = 'block';
+
+  const total = quizCards.length;
+  const pct   = Math.round((quizCorrect / total) * 100);
+
+  let emoji, title, subtitle, bg;
+  if      (pct >= 90) { emoji='🎉'; title='太厲害了！';   subtitle='這些觀念你已完全掌握，繼續保持！'; bg='#E8F8EA'; }
+  else if (pct >= 70) { emoji='💪'; title='不錯喔！';     subtitle=`還有 ${quizWrong} 題需要加強，再複習一下陷阱！`; bg='#FFF8DC'; }
+  else if (pct >= 50) { emoji='🤔'; title='再加油！';     subtitle='有些觀念還需要多練習，看看下面的錯題！'; bg='#FFE8E8'; }
+  else                { emoji='😅'; title='需要多複習！'; subtitle='別灰心，多刷幾次一定會進步！'; bg='#F3E8FF'; }
+
+  document.getElementById('resultEmoji').textContent    = emoji;
+  document.getElementById('resultCircle').style.background = bg;
+  document.getElementById('resultScore').textContent    = quizCorrect;
+  document.getElementById('resultTotal').textContent    = `/ ${total}`;
+  document.getElementById('resultTitle').textContent    = title;
+  document.getElementById('resultSubtitle').textContent = subtitle;
+
+  const missedSection = document.getElementById('missedSection');
+  missedSection.innerHTML = missedCards.length
+    ? `<div class="missed-title">❌ 答錯的題目（${missedCards.length} 題）</div>
+       <div class="missed-list">
+         ${missedCards.map(c => `
+           <div class="missed-item">
+             <div class="missed-item-concept">${c.concept}</div>
+             <div class="missed-item-pitfall">⚠️ ${c.pitfall}</div>
+           </div>`).join('')}
+       </div>`
+    : '';
+}
+
+function retryQuiz() {
+  quizSelectedChapter = lastQuizConfig.ch;
+  quizSelectedCount   = lastQuizConfig.count;
+  beginQuiz();
+}
+
+// ── UTILS ───────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
