@@ -1,0 +1,61 @@
+name: Auto Update Chapters
+
+on:
+  push:
+    paths:
+      - 'data/ch*.js'   # 只有 data/ 裡的 ch__.js 有變動時才觸發
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Scan data/ and update index.html
+        run: |
+          # 找出所有 data/ch*.js，依檔名排序
+          FILES=$(ls data/ch*.js 2>/dev/null | sort)
+
+          if [ -z "$FILES" ]; then
+            echo "No chapter files found, skipping."
+            exit 0
+          fi
+
+          # 組成 <script> 標籤字串
+          SCRIPT_TAGS=""
+          for f in $FILES; do
+            SCRIPT_TAGS="${SCRIPT_TAGS}  <script src=\"${f}\"></script>\n"
+          done
+
+          # 用 Python 替換 index.html 中的章節區塊
+          python3 - <<EOF
+          import re
+
+          with open('index.html', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          new_block = "<!-- CHAPTERS:START -->\n${SCRIPT_TAGS}<!-- CHAPTERS:END -->"
+
+          updated = re.sub(
+              r'<!-- CHAPTERS:START -->.*?<!-- CHAPTERS:END -->',
+              new_block,
+              content,
+              flags=re.DOTALL
+          )
+
+          with open('index.html', 'w', encoding='utf-8') as f:
+              f.write(updated)
+
+          print("index.html updated successfully.")
+          EOF
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          # 有變動才 commit，避免空 commit
+          git diff --cached --quiet || git commit -m "chore: auto-update chapter scripts"
+          git push
