@@ -149,16 +149,41 @@ function filterCards() {
                 : k === card.sourceQuestion.wrong ? 'wrong' : '';
       return `<div class="opt ${cls}">${k}. ${v}</div>`;
     }).join('');
+    const qNumBadge = card.qNum ? `<span class="q-num-badge">Q${card.qNum}</span>` : '';
 
     return `
-    <div class="review-card" onclick="toggleCard(this)">
+    <div class="review-card" id="card-${card.id}" onclick="toggleCard(this)">
       <div class="card-header">
-        <div class="card-concept">${card.concept}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;">
+          ${qNumBadge}
+          <div class="card-concept">${card.concept}</div>
+        </div>
         <div class="card-school" style="background:${ch.color || '#888'}">${card.sourceQuestion.school}</div>
       </div>
       <div class="card-tags">${card.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
-      <div class="card-summary">${card.summary}</div>
-      <div class="card-logic">💡 ${card.logic}</div>
+
+      <!-- 顯示模式 -->
+      <div class="card-view-mode">
+        <div class="card-summary">${card.summary}</div>
+        <div class="card-logic">💡 ${card.logic}</div>
+      </div>
+
+      <!-- 編輯模式（預設隱藏）-->
+      <div class="card-edit-mode" style="display:none;">
+        <div class="edit-label">📝 觀念說明</div>
+        <textarea class="edit-textarea" id="edit-summary-${card.id}" rows="4">${card.summary}</textarea>
+        <div class="edit-label" style="margin-top:10px;">💡 口訣</div>
+        <textarea class="edit-textarea" id="edit-logic-${card.id}" rows="2">${card.logic}</textarea>
+        <div class="edit-actions">
+          <button class="edit-cancel-btn" onclick="cancelEdit(event, '${card.id}')">取消</button>
+          <button class="edit-save-btn" onclick="saveCard(event, '${card.id}')">
+            <span class="save-text">儲存到 GitHub</span>
+            <span class="save-loading" style="display:none;">儲存中…</span>
+          </button>
+        </div>
+        <div class="edit-status" id="edit-status-${card.id}"></div>
+      </div>
+
       <div class="card-detail">
         <div class="pitfall-box">
           <h4>⚠️ 常見陷阱</h4>
@@ -169,12 +194,98 @@ function filterCards() {
           <div class="source-question">${card.sourceQuestion.question}</div>
           <div class="source-options">${optHtml}</div>
         </div>
+        <div style="text-align:right;margin-top:12px;">
+          <button class="edit-btn" onclick="startEdit(event, '${card.id}')">✏️ 編輯</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function toggleCard(el) { el.classList.toggle('expanded'); }
+function toggleCard(el) {
+  // 如果點到 textarea 或按鈕，不要收合卡片
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON') return;
+  const card = el.closest('.review-card');
+  if (card) card.classList.toggle('expanded');
+}
+
+// ── 編輯功能 ─────────────────────────
+function startEdit(event, cardId) {
+  event.stopPropagation();
+  const card = document.getElementById(`card-${cardId}`);
+  card.querySelector('.card-view-mode').style.display = 'none';
+  card.querySelector('.card-edit-mode').style.display = 'block';
+  card.classList.add('expanded'); // 確保展開
+}
+
+function cancelEdit(event, cardId) {
+  event.stopPropagation();
+  const card = document.getElementById(`card-${cardId}`);
+  card.querySelector('.card-view-mode').style.display = 'block';
+  card.querySelector('.card-edit-mode').style.display = 'none';
+  document.getElementById(`edit-status-${cardId}`).textContent = '';
+}
+
+async function saveCard(event, cardId) {
+  event.stopPropagation();
+
+  const saveBtn    = event.currentTarget;
+  const saveText   = saveBtn.querySelector('.save-text');
+  const saveLoader = saveBtn.querySelector('.save-loading');
+  const statusEl   = document.getElementById(`edit-status-${cardId}`);
+
+  const newSummary = document.getElementById(`edit-summary-${cardId}`).value.trim();
+  const newLogic   = document.getElementById(`edit-logic-${cardId}`).value.trim();
+
+  if (!newSummary || !newLogic) {
+    statusEl.textContent = '⚠️ 內容不能為空';
+    statusEl.className = 'edit-status error';
+    return;
+  }
+
+  // 找到卡片資料物件並更新記憶體中的值
+  let targetCard = null;
+  for (const ch of ALL_CHAPTERS) {
+    const found = ch.cards.find(c => c.id === cardId);
+    if (found) { targetCard = found; break; }
+  }
+  if (!targetCard) return;
+
+  // 更新記憶體
+  targetCard.summary = newSummary;
+  targetCard.logic   = newLogic;
+
+  // UI 進入 loading 狀態
+  saveBtn.disabled  = true;
+  saveText.style.display  = 'none';
+  saveLoader.style.display = 'inline';
+  statusEl.textContent = '';
+
+  try {
+    const result = await saveCardToGitHub(targetCard);
+
+    if (result.status === 'unchanged') {
+      statusEl.textContent = '內容沒有變化';
+      statusEl.className = 'edit-status info';
+    } else {
+      statusEl.textContent = '✅ 已儲存到 GitHub！';
+      statusEl.className = 'edit-status success';
+      // 同步更新顯示模式的內容
+      const cardEl = document.getElementById(`card-${cardId}`);
+      cardEl.querySelector('.card-summary').textContent = newSummary;
+      cardEl.querySelector('.card-logic').textContent   = '💡 ' + newLogic;
+      // 2 秒後自動關閉編輯模式
+      setTimeout(() => cancelEdit({ stopPropagation: () => {} }, cardId), 2000);
+    }
+  } catch (err) {
+    statusEl.textContent = `❌ 儲存失敗：${err.message}`;
+    statusEl.className = 'edit-status error';
+  } finally {
+    saveBtn.disabled        = false;
+    saveText.style.display  = 'inline';
+    saveLoader.style.display = 'none';
+  }
+}
 
 // ══════════════════════════════════════
 // QUIZ — SETUP
@@ -348,3 +459,46 @@ function shuffle(arr) {
   }
   return arr;
 }
+
+// ── SETTINGS / TOKEN ────────────────────
+function openSettings() {
+  const modal = document.getElementById('settingsModal');
+  modal.style.display = 'flex';
+  const existing = localStorage.getItem('github_token');
+  const input = document.getElementById('tokenInput');
+  input.value = existing ? '••••••••••••••••' : '';
+  const status = document.getElementById('tokenStatus');
+  status.textContent = existing ? '✅ 已設定 Token' : '尚未設定 Token';
+  status.style.color = existing ? '#6BCB77' : '#6B7280';
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function saveToken() {
+  const input = document.getElementById('tokenInput');
+  const status = document.getElementById('tokenStatus');
+  const val = input.value.trim();
+
+  if (!val || val.startsWith('•')) {
+    status.textContent = '⚠️ 請輸入新的 Token';
+    status.style.color = '#FF6B6B';
+    return;
+  }
+  if (!val.startsWith('ghp_') && !val.startsWith('github_pat_')) {
+    status.textContent = '⚠️ Token 格式不正確（應以 ghp_ 開頭）';
+    status.style.color = '#FF6B6B';
+    return;
+  }
+
+  localStorage.setItem('github_token', val);
+  status.textContent = '✅ 已儲存！';
+  status.style.color = '#6BCB77';
+  setTimeout(() => closeSettings(), 1000);
+}
+
+// 點 modal 背景關閉
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});

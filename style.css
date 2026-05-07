@@ -523,3 +523,116 @@ nav { display: flex; gap: 8px; }
   .cards-grid { grid-template-columns: 1fr; }
   .quiz-option-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════
+   EDIT MODE
+   ═══════════════════════════════════════ */
+
+/* 題號 badge */
+.q-num-badge {
+  flex-shrink: 0;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 50px;
+  background: #F3F4F6;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* 編輯按鈕 */
+.edit-btn {
+  padding: 7px 16px;
+  border-radius: 50px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+.edit-btn:hover {
+  border-color: var(--accent4);
+  color: var(--accent4);
+  background: #F0F5FF;
+}
+
+/* 編輯區塊 */
+.card-edit-mode { margin-top: 12px; }
+
+.edit-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--bg);
+  color: var(--text);
+}
+.edit-textarea:focus { border-color: var(--accent4); }
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.edit-cancel-btn {
+  padding: 9px 20px;
+  border-radius: 50px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.edit-cancel-btn:hover { background: var(--border); color: var(--text); }
+
+.edit-save-btn {
+  padding: 9px 22px;
+  border-radius: 50px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent4), var(--accent5));
+  color: white;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 12px rgba(77,150,255,0.35);
+}
+.edit-save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(77,150,255,0.45); }
+.edit-save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* 儲存狀態訊息 */
+.edit-status {
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-align: right;
+  margin-top: 8px;
+  min-height: 20px;
+}
+.edit-status.success { color: var(--accent3); }
+.edit-status.error   { color: var(--accent1); }
+.edit-status.info    { color: var(--text-muted); }

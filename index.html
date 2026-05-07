@@ -31,8 +31,37 @@
     <button class="nav-btn active" id="nav-home"   onclick="showPage('home')">首頁</button>
     <button class="nav-btn"        id="nav-browse" onclick="showPage('browse')">瀏覽卡片</button>
     <button class="nav-btn"        id="nav-quiz"   onclick="showPage('quiz')">測驗</button>
+    <button class="nav-btn"        id="nav-settings" onclick="openSettings()" title="GitHub 設定">⚙️</button>
   </nav>
 </header>
+
+<!-- ── TOKEN 設定 Modal ── -->
+<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:999; display:none; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:20px; padding:32px; width:90%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h2 style="font-family:'Nunito',sans-serif; font-weight:900; margin-bottom:8px;">⚙️ GitHub 設定</h2>
+    <p style="font-size:0.88rem; color:#6B7280; margin-bottom:20px; line-height:1.6;">
+      輸入你的 GitHub Personal Access Token，才能從網站上儲存卡片內容。<br>
+      Token 只存在你的瀏覽器裡，不會上傳到任何地方。
+    </p>
+    <label style="font-size:0.8rem; font-weight:700; color:#6B7280; text-transform:uppercase; letter-spacing:0.05em;">GitHub Token</label>
+    <input id="tokenInput" type="password"
+      placeholder="ghp_xxxxxxxxxxxxxxxx"
+      style="width:100%; margin-top:6px; padding:12px 16px; border:2px solid #E5E7EB; border-radius:12px; font-size:0.92rem; outline:none; font-family:'Noto Sans TC',sans-serif;"
+      onfocus="this.style.borderColor='#4D96FF'"
+      onblur="this.style.borderColor='#E5E7EB'">
+    <div id="tokenStatus" style="font-size:0.82rem; margin-top:8px; min-height:18px;"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+      <button onclick="closeSettings()"
+        style="padding:10px 22px; border-radius:50px; border:2px solid #E5E7EB; background:#fff; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer;">
+        取消
+      </button>
+      <button onclick="saveToken()"
+        style="padding:10px 22px; border-radius:50px; border:none; background:linear-gradient(135deg,#4D96FF,#C77DFF); color:#fff; font-family:'Nunito',sans-serif; font-weight:700; cursor:pointer;">
+        儲存 Token
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════
      HOME PAGE
@@ -152,9 +181,14 @@
      只要把 ch__.js 丟進 data/ 再 push，下方區塊會自動更新
 -->
 
+<!-- 設定檔（GitHub token 在這裡）-->
+<script src="config.js"></script>
+<!-- GitHub API 存檔邏輯 -->
+<script src="github-api.js"></script>
+
 <!-- CHAPTERS:START -->
   <script src="data/ch48.js"></script>
-<!-- CHAPTERS:END -->
+  <!-- CHAPTERS:END -->
 
 <script src="data/index.js"></script>
 <script src="app.js"></script>
