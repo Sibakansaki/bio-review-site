@@ -177,18 +177,16 @@
 </div>
 
 <!-- ── SCRIPTS ──
-     ✅ 章節由 GitHub Actions 自動維護
-     只要把 ch__.js 丟進 data/ 再 push，下方區塊會自動更新
+     章節由 data/index.js 動態載入（含 cache busting）
+     新增章節：在 data/index.js 的 CHAPTER_FILES 加一行
 -->
 
-<!-- 設定檔（GitHub token 在這裡）-->
+<!-- 設定檔 -->
 <script src="config.js"></script>
 <!-- GitHub API 存檔邏輯 -->
 <script src="github-api.js"></script>
-
-<!-- CHAPTERS:START -->
-  <script src="data/ch48.js"></script>
-<!-- CHAPTERS:END -->
+<!-- 章節收集器（動態載入章節資料）-->
+<script src="data/index.js"></script>
 
 <script src="data/index.js"></script>
 <script src="app.js"></script>
