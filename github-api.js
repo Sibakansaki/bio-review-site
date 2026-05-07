@@ -23,7 +23,7 @@ function fromBase64(b64) {
 // 取得某個檔案在 GitHub 上的內容與 SHA
 async function githubGetFile(path) {
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}?ref=${GITHUB_CONFIG.branch}`,
+    `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}?ref=${GITHUB_CONFIG.branch}&t=${Date.now()}`,
     { headers: { Authorization: `token ${GITHUB_CONFIG.token}` } }
   );
   if (!res.ok) throw new Error(`無法取得檔案：${path}（${res.status}）`);
