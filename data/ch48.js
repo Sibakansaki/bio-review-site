@@ -65,7 +65,7 @@ var CH48 = {
       concept: "P 物質為興奮性神經傳導物質",
       tags: ["興奮性傳導物 excitatory neurotransmitter", "P 物質 substance P", "GABA", "甘胺酸 glycine"],
       summary: "神經傳導物質依功能分為興奮性（excitatory）和抑制性（inhibitory）。常見抑制性傳導物：GABA（gamma-aminobutyric acid，γ-胺基丁酸，開 Cl⁻ 通道造成超極化）和甘胺酸（glycine，同樣開 Cl⁻ 通道）。血清素（serotonin）主要調節情緒、睡眠，以抑制或調節為主。P 物質（substance P）是由 11 個胺基酸組成的神經胜肽（neuropeptide），與痛覺傳遞（pain transmission）密切相關，是興奮性傳導物質，能使突觸後膜去極化，傳遞傷害性刺激。",
-      logic: "GABA → 抑制性（Cl⁻ 內流 → 超極化）；甘胺酸 → 抑制性；血清素 → 調節/抑制為主；P 物質 → 興奮性（傳遞痛覺）",
+      logic: "Fanza",
       pitfall: "誤選A（血清素 serotonin）。血清素雖能在某些受體產生興奮效果，但在中樞神經的主要角色是情緒調節和抑制，不以「興奮性傳導物質」為主要分類。P 物質才是標準教科書中明確的興奮性痛覺傳導物質。",
       sourceQuestion: {
         school: "99 私醫",
