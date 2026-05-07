@@ -18,7 +18,7 @@ var CH48 = {
       concept: "咖啡因抑制 PDE，cAMP 濃度上升",
       tags: ["cAMP", "磷酸二酯酶 PDE", "咖啡因 caffeine", "第二傳訊者 second messenger"],
       summary: "磷酸二酯酶（phosphodiesterase, PDE）負責分解環狀腺苷單磷酸（cyclic AMP, cAMP）。咖啡因（caffeine）能抑制 PDE，使 cAMP 無法正常被降解，細胞內 cAMP 濃度因而上升。cAMP 是重要的第二傳訊者（second messenger），參與許多訊號傳遞途徑，包括促進肝醣分解。當 cAMP 升高後，會活化蛋白激酶 A（protein kinase A, PKA），PKA 再去磷酸化各種蛋白質產生生理反應。注意：cAMP 由 ATP 合成（腺苷酸環化酶催化），被 PDE 分解，PDE 被抑制時堆積的是受質 cAMP，而非上游的 ATP。",
-      logic: "咖啡因 → 抑制 PDE → cAMP 無法分解 → [cAMP] ↑ → 活化 PKA → 蛋白質磷酸化 皮皮",
+      logic: "咖啡因 → 抑制 PDE → cAMP 無法分解 → [cAMP] ↑ → 活化 PKA → 蛋白質磷酸化",
       pitfall: "誤選C（ATP）。cAMP 由 ATP 合成，容易誤以為 PDE 被抑制後 ATP 會增加，但 PDE 的受質是 cAMP 而非 ATP，被抑制時堆積的是 cAMP。",
       sourceQuestion: {
         school: "104 慈濟",

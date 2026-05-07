@@ -20,7 +20,7 @@ function fromBase64(b64) {
   );
 }
 
-// 取得某個檔案在 GitHub 上的內容與 SHA
+// 取得某個檔案在 GitHub 上的內容與 SHA（加時間戳避免快取）
 async function githubGetFile(path) {
   const res = await fetch(
     `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}?ref=${GITHUB_CONFIG.branch}&t=${Date.now()}`,
@@ -30,47 +30,73 @@ async function githubGetFile(path) {
   return res.json();
 }
 
-// 把更新後的卡片資料存回 GitHub
-async function saveCardToGitHub(card) {
-  const chapterId = card.id.split('-')[0];
-  const filePath  = `data/${chapterId}.js`;
-
-  // 1. 取得目前的檔案（需要 SHA 才能更新）
-  const fileInfo = await githubGetFile(filePath);
-
-  // 用 UTF-8 安全解碼
-  const currentContent = fromBase64(fileInfo.content.replace(/\n/g, ''));
-
-  // 2. 替換 summary 和 logic
-  const updatedContent = patchCardContent(currentContent, card);
-
-  if (updatedContent === currentContent) {
-    return { status: 'unchanged' };
-  }
-
-  // 3. 用 UTF-8 安全編碼後寫回 GitHub
-  const body = {
-    message: `update: ${card.id} summary/logic`,
-    content: toBase64(updatedContent),
-    sha:     fileInfo.sha,
-    branch:  GITHUB_CONFIG.branch,
-  };
-
+// 寫入檔案到 GitHub
+async function githubPutFile(path, content, sha, message) {
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${filePath}`,
+    `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`,
     {
       method:  'PUT',
       headers: {
         Authorization:  `token ${GITHUB_CONFIG.token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        message,
+        content: toBase64(content),
+        sha,
+        branch: GITHUB_CONFIG.branch,
+      }),
     }
   );
-
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(err.message || `儲存失敗（${res.status}）`);
+    throw new Error(err.message || `寫入失敗（${res.status}）`);
+  }
+  return res.json();
+}
+
+// 把更新後的卡片資料存回 GitHub
+async function saveCardToGitHub(card) {
+  const chapterId = card.id.split('-')[0];
+  const filePath  = `data/${chapterId}.js`;
+
+  // 1. 取得目前的章節檔案
+  const fileInfo = await githubGetFile(filePath);
+  const currentContent = fromBase64(fileInfo.content.replace(/\n/g, ''));
+
+  // 2. 替換 summary 和 logic
+  const updatedContent = patchCardContent(currentContent, card);
+  if (updatedContent === currentContent) {
+    return { status: 'unchanged' };
+  }
+
+  // 3. 存回章節檔案
+  await githubPutFile(
+    filePath,
+    updatedContent,
+    fileInfo.sha,
+    `update: ${card.id} summary/logic`
+  );
+
+  // 4. 更新 index.html 版本號，讓瀏覽器強制重新抓新版章節檔
+  try {
+    const indexInfo = await githubGetFile('index.html');
+    const indexContent = fromBase64(indexInfo.content.replace(/\n/g, ''));
+    const newVersion = Date.now();
+    const updatedIndex = indexContent.replace(
+      new RegExp(`(data/${chapterId}\\.js)(\\?v=\\d+)?`),
+      `data/${chapterId}.js?v=${newVersion}`
+    );
+    if (updatedIndex !== indexContent) {
+      await githubPutFile(
+        'index.html',
+        updatedIndex,
+        indexInfo.sha,
+        `chore: bump ${chapterId} version`
+      );
+    }
+  } catch (e) {
+    console.warn('版本號更新失敗（不影響內容儲存）:', e);
   }
 
   return { status: 'saved' };
@@ -110,7 +136,6 @@ function replaceFieldInBlock(block, field, newValue) {
   const safeValue = newValue
     .replace(/\\/g, '\\\\')
     .replace(/"/g,  '\\"');
-
   return block.replace(pattern, `$1"${safeValue}"$4`);
 }
 
