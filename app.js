@@ -164,7 +164,7 @@ function filterCards() {
 
       <!-- 顯示模式 -->
       <div class="card-view-mode">
-        <div class="card-summary">${card.summary}</div>
+        <div class="card-summary">${card.summary.replace(/\n/g, '<br>')}</div>
         <div class="card-logic">💡 ${card.logic}</div>
       </div>
 
@@ -272,7 +272,7 @@ async function saveCard(event, cardId) {
       statusEl.className = 'edit-status success';
       // 同步更新顯示模式的內容
       const cardEl = document.getElementById(`card-${cardId}`);
-      cardEl.querySelector('.card-summary').textContent = newSummary;
+      cardEl.querySelector('.card-summary').innerHTML = newSummary.replace(/\n/g, '<br>');
       cardEl.querySelector('.card-logic').textContent   = '💡 ' + newLogic;
       // 2 秒後自動關閉編輯模式
       setTimeout(() => cancelEdit({ stopPropagation: () => {} }, cardId), 2000);
