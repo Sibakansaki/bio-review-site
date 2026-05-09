@@ -636,3 +636,74 @@ nav { display: flex; gap: 8px; }
 .edit-status.success { color: var(--accent3); }
 .edit-status.error   { color: var(--accent1); }
 .edit-status.info    { color: var(--text-muted); }
+
+/* ── 圖片功能 ── */
+.card-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.card-image-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.card-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: zoom-in;
+  border: 2px solid var(--border);
+}
+
+.img-delete-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent1);
+  color: white;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.img-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 16px;
+  border-radius: 50px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+
+.img-upload-btn:hover {
+  border-color: var(--accent3);
+  color: var(--accent3);
+  background: #E8F8EA;
+}
+
+.img-upload-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: right;
+  margin-top: 6px;
+  min-height: 18px;
+}
