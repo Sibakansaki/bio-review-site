@@ -707,3 +707,35 @@ nav { display: flex; gap: 8px; }
   margin-top: 6px;
   min-height: 18px;
 }
+
+/* ── 圖片混排樣式 ── */
+.inline-card-img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin: 10px 0;
+  cursor: zoom-in;
+  border: 2px solid var(--border);
+}
+
+/* 附件按鈕 */
+.attach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.attach-btn:hover {
+  border-color: var(--accent4);
+  background: #F0F5FF;
+}

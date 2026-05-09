@@ -164,33 +164,35 @@ function filterCards() {
 
       <!-- 顯示模式 -->
       <div class="card-view-mode">
-        <div class="card-summary">${card.summary.replace(/\n/g, '<br>')}</div>
-
-        <!-- 圖片區塊（summary 下方）-->
-        <div class="card-images" id="images-${card.id}">
-          ${(card.images || []).map((url, i) => `
-            <div class="card-image-item">
-              <img src="${url}" alt="補充圖片" onclick="viewImage('${url}')">
-              <button class="img-delete-btn" onclick="deleteImage(event, '${card.id}', ${i})">✕</button>
-            </div>
-          `).join('')}
-        </div>
-
+        <div class="card-summary">${renderContent(card.summary)}</div>
         <div class="card-logic">💡 ${card.logic}</div>
       </div>
 
-      <!-- 編輯模式（預設隱藏）-->
+      <!-- 編輯模式 -->
       <div class="card-edit-mode" style="display:none;">
         <div class="edit-label">📝 觀念說明</div>
-        <textarea class="edit-textarea" id="edit-summary-${card.id}" rows="4">${card.summary}</textarea>
+        <textarea class="edit-textarea" id="edit-summary-${card.id}" rows="8"
+          onclick="event.stopPropagation()"
+          onfocus="setActiveTextarea('edit-summary-${card.id}')"
+        >${card.summary}</textarea>
         <div class="edit-label" style="margin-top:10px;">💡 口訣</div>
-        <textarea class="edit-textarea" id="edit-logic-${card.id}" rows="2">${card.logic}</textarea>
+        <textarea class="edit-textarea" id="edit-logic-${card.id}" rows="2"
+          onclick="event.stopPropagation()"
+          onfocus="setActiveTextarea('edit-logic-${card.id}')"
+        >${card.logic}</textarea>
         <div class="edit-actions">
           <button class="edit-cancel-btn" onclick="cancelEdit(event, '${card.id}')">取消</button>
-          <button class="edit-save-btn" onclick="saveCard(event, '${card.id}')">
-            <span class="save-text">儲存到 GitHub</span>
-            <span class="save-loading" style="display:none;">儲存中…</span>
-          </button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label class="attach-btn" title="在游標處插入圖片" onclick="event.stopPropagation()">
+              📎
+              <input type="file" accept="image/*" style="display:none;"
+                onchange="attachImage(event, '${card.id}')">
+            </label>
+            <button class="edit-save-btn" onclick="saveCard(event, '${card.id}')">
+              <span class="save-text">儲存到 GitHub</span>
+              <span class="save-loading" style="display:none;">儲存中…</span>
+            </button>
+          </div>
         </div>
         <div class="edit-status" id="edit-status-${card.id}"></div>
       </div>
@@ -205,16 +207,9 @@ function filterCards() {
           <div class="source-question">${card.sourceQuestion.question}</div>
           <div class="source-options">${optHtml}</div>
         </div>
-
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
-          <label class="img-upload-btn" onclick="event.stopPropagation()">
-            📷 新增圖片
-            <input type="file" accept="image/*" capture="environment" style="display:none;"
-              onchange="uploadImage(event, '${card.id}')">
-          </label>
+        <div style="text-align:right;margin-top:12px;">
           <button class="edit-btn" onclick="startEdit(event, '${card.id}')">✏️ 編輯</button>
         </div>
-        <div class="img-upload-status" id="img-status-${card.id}"></div>
       </div>
     </div>`;
   }).join('');
@@ -290,7 +285,7 @@ async function saveCard(event, cardId) {
       statusEl.className = 'edit-status success';
       // 同步更新顯示模式的內容
       const cardEl = document.getElementById(`card-${cardId}`);
-      cardEl.querySelector('.card-summary').innerHTML = newSummary.replace(/\n/g, '<br>');
+      cardEl.querySelector('.card-summary').innerHTML = renderContent(newSummary);
       cardEl.querySelector('.card-logic').textContent   = '💡 ' + newLogic;
       // 2 秒後自動關閉編輯模式
       setTimeout(() => cancelEdit({ stopPropagation: () => {} }, cardId), 2000);
@@ -303,6 +298,93 @@ async function saveCard(event, cardId) {
     saveText.style.display  = 'inline';
     saveLoader.style.display = 'none';
   }
+}
+
+// ── 渲染含圖片的內容 ────────────────────
+// summary 裡的 ![圖片](url) 會被渲染成 <img>
+function renderContent(text) {
+  if (!text) return '';
+  return text
+    .replace(/
+/g, '<br>')
+    .replace(/!\[.*?\]\((https?:\/\/[^\)]+)\)/g,
+      (_, url) => `<img src="${url}" class="inline-card-img" onclick="viewImage('${url}')" alt="補充圖片">`
+    );
+}
+
+// ── 記錄目前焦點在哪個 textarea ──────────
+let _activeTextareaId = null;
+function setActiveTextarea(id) {
+  _activeTextareaId = id;
+}
+
+// ── 附件按鈕：上傳圖片並插入游標位置 ──────
+const CLOUDINARY = {
+  cloudName: 'dyfdvchdd',
+  uploadPreset: 'bio-review-upload',
+};
+
+async function attachImage(event, cardId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.stopPropagation();
+
+  // 找出目前焦點的 textarea（預設用 summary）
+  const textareaId = _activeTextareaId || `edit-summary-${cardId}`;
+  const textarea = document.getElementById(textareaId);
+  const statusEl = document.getElementById(`edit-status-${cardId}`);
+
+  statusEl.textContent = '⏳ 上傳圖片中…';
+  statusEl.className = 'edit-status info';
+
+  try {
+    // 1. 上傳到 Cloudinary
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY.uploadPreset);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+    if (!res.ok) throw new Error('Cloudinary 上傳失敗');
+    const data = await res.json();
+    const url = data.secure_url;
+
+    // 2. 在游標位置插入佔位符
+    const placeholder = `
+![圖片](${url})
+`;
+    const start = textarea.selectionStart;
+    const end   = textarea.selectionEnd;
+    const before = textarea.value.substring(0, start);
+    const after  = textarea.value.substring(end);
+    textarea.value = before + placeholder + after;
+
+    // 3. 移動游標到插入點之後
+    const newPos = start + placeholder.length;
+    textarea.selectionStart = textarea.selectionEnd = newPos;
+    textarea.focus();
+
+    statusEl.textContent = '✅ 圖片已插入！儲存後生效。';
+    statusEl.className = 'edit-status success';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+
+  } catch (err) {
+    statusEl.textContent = `❌ 上傳失敗：${err.message}`;
+    statusEl.className = 'edit-status error';
+  }
+
+  event.target.value = '';
+}
+
+// ── 全螢幕查看圖片 ───────────────────────
+function viewImage(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+  overlay.innerHTML = `<img src="${url}" style="max-width:95%;max-height:95%;border-radius:8px;object-fit:contain;">`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
 }
 
 // ══════════════════════════════════════
