@@ -165,6 +165,17 @@ function filterCards() {
       <!-- 顯示模式 -->
       <div class="card-view-mode">
         <div class="card-summary">${card.summary.replace(/\n/g, '<br>')}</div>
+
+        <!-- 圖片區塊（summary 下方）-->
+        <div class="card-images" id="images-${card.id}">
+          ${(card.images || []).map((url, i) => `
+            <div class="card-image-item">
+              <img src="${url}" alt="補充圖片" onclick="viewImage('${url}')">
+              <button class="img-delete-btn" onclick="deleteImage(event, '${card.id}', ${i})">✕</button>
+            </div>
+          `).join('')}
+        </div>
+
         <div class="card-logic">💡 ${card.logic}</div>
       </div>
 
@@ -193,16 +204,6 @@ function filterCards() {
           <h4>📋 原始題目</h4>
           <div class="source-question">${card.sourceQuestion.question}</div>
           <div class="source-options">${optHtml}</div>
-        </div>
-
-        <!-- 圖片區塊 -->
-        <div class="card-images" id="images-${card.id}">
-          ${(card.images || []).map((url, i) => `
-            <div class="card-image-item">
-              <img src="${url}" alt="補充圖片" onclick="viewImage('${url}')">
-              <button class="img-delete-btn" onclick="deleteImage(event, '${card.id}', ${i})">✕</button>
-            </div>
-          `).join('')}
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
