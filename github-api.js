@@ -135,7 +135,9 @@ function replaceFieldInBlock(block, field, newValue) {
   );
   const safeValue = newValue
     .replace(/\\/g, '\\\\')
-    .replace(/"/g,  '\\"');
+    .replace(/"/g,  '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
   return block.replace(pattern, `$1"${safeValue}"$4`);
 }
 
