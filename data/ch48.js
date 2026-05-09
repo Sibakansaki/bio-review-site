@@ -21,7 +21,7 @@ var CH48 = {
 ・磷酸二酯酶（phosphodiesterase, PDE）→ 分解 cAMP
 ・cAMP（cyclic AMP）→ 重要的第二傳訊者（second messenger）
 
-![圖片](https://res.cloudinary.com/dyfdvchdd/image/upload/v1778311473/un3uretocxty3fsjbdq9.jpg)
+![圖片](https://res.cloudinary.com/dyfdvchdd/image/upload/v1778311505/mxzwphh0uwmkew5aupfh.jpg)
 
 【咖啡因的作用】
 ・抑制 PDE → cAMP 無法被分解 → 細胞內 [cAMP] ↑
