@@ -60,44 +60,37 @@ async function saveCardToGitHub(card) {
   const chapterId = card.id.split('-')[0];
   const filePath  = `data/${chapterId}.js`;
 
-  // 1. 取得目前的章節檔案
-  const fileInfo = await githubGetFile(filePath);
-  const currentContent = fromBase64(fileInfo.content.replace(/\n/g, ''));
+  // 1. 同時抓 ch48.js 和 index.html（平行請求，節省時間）
+  const [fileInfo, indexInfo] = await Promise.all([
+    githubGetFile(filePath),
+    githubGetFile('index.html'),
+  ]);
 
   // 2. 替換 summary 和 logic
+  const currentContent = fromBase64(fileInfo.content.replace(/\n/g, ''));
   const updatedContent = patchCardContent(currentContent, card);
   if (updatedContent === currentContent) {
     return { status: 'unchanged' };
   }
 
-  // 3. 存回章節檔案
-  await githubPutFile(
-    filePath,
-    updatedContent,
-    fileInfo.sha,
-    `update: ${card.id} summary/logic`
+  // 3. 準備 index.html 的新版本號
+  const indexContent = fromBase64(indexInfo.content.replace(/\n/g, ''));
+  const newVersion = Date.now();
+  const updatedIndex = indexContent.replace(
+    new RegExp(`(data/${chapterId}\\.js)(\\?v=\\d+)?`),
+    `data/${chapterId}.js?v=${newVersion}`
   );
 
-  // 4. 更新 index.html 版本號，讓瀏覽器強制重新抓新版章節檔
-  try {
-    const indexInfo = await githubGetFile('index.html');
-    const indexContent = fromBase64(indexInfo.content.replace(/\n/g, ''));
-    const newVersion = Date.now();
-    const updatedIndex = indexContent.replace(
-      new RegExp(`(data/${chapterId}\\.js)(\\?v=\\d+)?`),
-      `data/${chapterId}.js?v=${newVersion}`
+  // 4. 同時寫回 ch48.js 和 index.html（平行請求）
+  const writes = [
+    githubPutFile(filePath, updatedContent, fileInfo.sha, `update: ${card.id} summary/logic`),
+  ];
+  if (updatedIndex !== indexContent) {
+    writes.push(
+      githubPutFile('index.html', updatedIndex, indexInfo.sha, `chore: bump ${chapterId} version`)
     );
-    if (updatedIndex !== indexContent) {
-      await githubPutFile(
-        'index.html',
-        updatedIndex,
-        indexInfo.sha,
-        `chore: bump ${chapterId} version`
-      );
-    }
-  } catch (e) {
-    console.warn('版本號更新失敗（不影響內容儲存）:', e);
   }
+  await Promise.all(writes);
 
   return { status: 'saved' };
 }
