@@ -305,8 +305,7 @@ async function saveCard(event, cardId) {
 function renderContent(text) {
   if (!text) return '';
   return text
-    .replace(/
-/g, '<br>')
+    .replace(/\n/g, '<br>')
     .replace(/!\[.*?\]\((https?:\/\/[^\)]+)\)/g,
       (_, url) => `<img src="${url}" class="inline-card-img" onclick="viewImage('${url}')" alt="補充圖片">`
     );
@@ -352,9 +351,7 @@ async function attachImage(event, cardId) {
     const url = data.secure_url;
 
     // 2. 在游標位置插入佔位符
-    const placeholder = `
-![圖片](${url})
-`;
+    const placeholder = `\n![圖片](${url})\n`;
     const start = textarea.selectionStart;
     const end   = textarea.selectionEnd;
     const before = textarea.value.substring(0, start);
