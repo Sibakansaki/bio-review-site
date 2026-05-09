@@ -55,7 +55,7 @@ async function githubPutFile(path, content, sha, message) {
   return res.json();
 }
 
-// 把更新後的卡片資料存回 GitHub
+// 把更新後的卡片 summary/logic 存回 GitHub
 async function saveCardToGitHub(card) {
   const chapterId = card.id.split('-')[0];
   const filePath  = `data/${chapterId}.js`;
@@ -141,64 +141,4 @@ function replaceFieldInBlock(block, field, newValue) {
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// 儲存圖片網址陣列到 GitHub
-async function saveImagesToGitHub(card) {
-  const chapterId = card.id.split('-')[0];
-  const filePath  = `data/${chapterId}.js`;
-
-  const fileInfo = await githubGetFile(filePath);
-  const currentContent = fromBase64(fileInfo.content.replace(/\n/g, ''));
-
-  // 找到這張卡片的區塊，更新 images 欄位
-  const updated = patchImagesField(currentContent, card);
-  if (updated === currentContent) return;
-
-  await githubPutFile(filePath, updated, fileInfo.sha, `update: ${card.id} images`);
-
-  // 更新 index.html 版本號
-  try {
-    const indexInfo = await githubGetFile('index.html');
-    const indexContent = fromBase64(indexInfo.content.replace(/\n/g, ''));
-    const newVersion = Date.now();
-    const updatedIndex = indexContent.replace(
-      new RegExp(`(data/${chapterId}\\.js)(\\?v=\\d+)?`),
-      `data/${chapterId}.js?v=${newVersion}`
-    );
-    if (updatedIndex !== indexContent) {
-      await githubPutFile('index.html', updatedIndex, indexInfo.sha, `chore: bump ${chapterId} version`);
-    }
-  } catch (e) {
-    console.warn('版本號更新失敗:', e);
-  }
-}
-
-function patchImagesField(content, card) {
-  const idPattern = new RegExp(`id:\\s*["']${escapeRegex(card.id)}["']`);
-  const idMatch = content.match(idPattern);
-  if (!idMatch) return content;
-
-  const idIndex = content.indexOf(idMatch[0]);
-  const nextIdMatch = content.slice(idIndex + 1).match(/\bid:\s*["']ch\d+-\d+["']/);
-  const blockEnd = nextIdMatch
-    ? idIndex + 1 + content.slice(idIndex + 1).indexOf(nextIdMatch[0])
-    : content.length;
-
-  const block = content.slice(idIndex, blockEnd);
-  const imagesJson = JSON.stringify(card.images || []);
-
-  let newBlock;
-  if (/images\s*:/.test(block)) {
-    // 已有 images 欄位，替換
-    newBlock = block.replace(/images\s*:\s*\[.*?\]/s, `images: ${imagesJson}`);
-  } else {
-    // 沒有 images 欄位，加在 sourceQuestion 前
-    newBlock = block.replace(
-      /(sourceQuestion\s*:)/,
-      `images: ${imagesJson},\n      $1`
-    );
-  }
-
-  return content.slice(0, idIndex) + newBlock + content.slice(blockEnd);
 }
