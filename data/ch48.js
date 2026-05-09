@@ -25,8 +25,6 @@ var CH48 = {
 ・抑制 PDE → cAMP 無法被分解 → 細胞內 [cAMP] ↑
 ・cAMP ↑ → 活化蛋白激酶 A（protein kinase A, PKA）→ 蛋白質磷酸化
 
-![圖片](https://res.cloudinary.com/dyfdvchdd/image/upload/v1778310704/qrklsbk6atgbxbxzwtoq.jpg)
-
 【注意】
 ・cAMP 由 ATP 合成（腺苷酸環化酶 adenylyl cyclase 催化）
 ・PDE 的受質是 cAMP，不是 ATP
