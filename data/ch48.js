@@ -20,7 +20,7 @@ var CH48 = {
       summary: "【角色分工】\n・磷酸二酯酶（phosphodiesterase, PDE）→ 分解 cAMP\n・cAMP（cyclic AMP）→ 重要的第二傳訊者（second messenger）\n\n【咖啡因的作用】\n・抑制 PDE → cAMP 無法被分解 → 細胞內 [cAMP] ↑\n・cAMP ↑ → 活化蛋白激酶 A（protein kinase A, PKA）→ 蛋白質磷酸化\n\n【注意】\n・cAMP 由 ATP 合成（腺苷酸環化酶 adenylyl cyclase 催化）\n・PDE 的受質是 cAMP，不是 ATP\n・PDE 被抑制 → 堆積的是受質 cAMP，而非上游的 ATP",
       logic: "咖啡因 → 抑制 PDE → cAMP 無法分解 → [cAMP] ↑ → 活化 PKA → 蛋白質磷酸化",
       pitfall: "誤選C（ATP）。cAMP 由 ATP 合成，容易誤以為 PDE 被抑制後 ATP 會增加，但 PDE 的受質是 cAMP 而非 ATP，被抑制時堆積的是 cAMP。",
-      images: [],
+      images: ["https://res.cloudinary.com/dyfdvchdd/image/upload/v1778308874/eieupfpagdqgjmcxisdu.jpg"],
       sourceQuestion: {
         school: "104 慈濟",
         question: "咖啡因(caffeine)是一種磷酸二酯酶(phosphodiesterase)的抑制劑；故咖啡因可能會造成細胞內哪種分子的數量上升？",
